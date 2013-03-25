@@ -23,13 +23,13 @@ if ($currentUser == 'root')
     {
       if (!is_executable($fullPath))
       {
-        if (!chmod($fullPath, 0755))
+        if (!chmod($fullPath, 0755) || !chmod($fullPath, '+x'))
         {
           echo 'Could not change the script [' . $fullPath . '] to executable' . PHP_EOL;
           exit(1);
         }
       }
-      if (file_exists($execPath) && is_link($execPath))
+      if (is_link($execPath))
       {
         $execLink = readlink($execPath);
         if ($execLink == $fullPath)
@@ -76,7 +76,7 @@ if ($currentUser == 'root')
         }
         else
         {
-          echo 'Symlink NOK !' . PHP_EOL;
+          echo 'Symlink NOK ! [' . $fullPath . ' | ' . $execPath . ']' . PHP_EOL;
           exit(1);
         }
       }
@@ -88,10 +88,4 @@ else
   echo 'You must be root to run this script' . PHP_EOL;
   exit(1);
 }
-
-//if(!file_exists('/usr/local/bin/missing_merge')){
-//  $currentDir = getcwd();
-//}else{
-//  echo 'Seems it already is installed' . PHP_EOL;
-//}
 exit(0);
