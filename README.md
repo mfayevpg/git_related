@@ -41,7 +41,7 @@ The job of this script is to give you a convenient way to spot them.
 "redmine_point_list.txt" file.
 2. Go to your console and run the following command : 
 
-        check project_branch application [redmine_point_list_file]
+        missing_merge project_branch application [redmine_point_list_file]
     
         project_branch          : The branch you want to check for missing merge (typically S49_911 for instance)
                                   Be advised that your local repository needs to be on this branch, 
@@ -49,11 +49,11 @@ The job of this script is to give you a convenient way to spot them.
         application             : Application that needs to be check [bong, front, oxy]
         redmine_point_list_file : Path to the file that contents the list of the redmine project
 
-tester_switch_branch
---------------------
+tester_branch
+-------------
 Intends to simplify switching branch for tester
 
-    Usage : tester_branch_switch point_number|master_number|branch|lastmaster
+    Usage : tester_branch point_number|master_number|branch|lastmaster
     examples :
       tester_branch_switch 33116             Will switch to point_33116 branch
       tester_branch_switch 1.33              Will switch to master_1.33 branch
