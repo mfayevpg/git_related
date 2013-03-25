@@ -24,6 +24,7 @@ The job of this script is to give you a convenient way to spot them.
 1. First get to your project on redmine and extract all the issues and put all the issues id in a 
 "redmine_point_list.txt" file.
 2. Go to your console and run the following command : 
+
     check project_branch application [redmine_point_list_file]
 
     project_branch          : The branch you want to check for missing merge (typically S49_911 for instance)
