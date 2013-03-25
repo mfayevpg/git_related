@@ -5,6 +5,11 @@ This a collection of scripts to do some simple git tasks.
 
 Installing the Scripts
 ----------------------
+
+There are 2 ways to install the scripts : Manual and Automatic
+
+### Manual
+
 Those scripts are meant to be run from the command line.
 Best practice would be to clone this repo in some dir then make a symbolic link to each script in your /usr/local/bin
 
@@ -14,6 +19,16 @@ Best practice would be to clone this repo in some dir then make a symbolic link 
 This way you can call them from wherever you are.
 
     mfaye@vp-aix-dev11:/nfs-dev/FRANCE-VPG/mfaye/www/bg_builder$tester_branch 33116
+
+### Automatic
+
+Run the install script
+
+    git git@github.com:mfayevpg/git_related.git git_related
+    cd git_related
+    sudo ./install.sh
+
+And it's done :)
 
 Any explanation on how to use those scripts in this document will assume that you have done this operation
 
