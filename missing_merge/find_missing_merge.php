@@ -1,3 +1,4 @@
+#!/usr/bin/php
 <?php
 /**
  * User: mfaye
@@ -9,7 +10,7 @@ $application = '';
 if ($argc < 2)
 {
   $message = <<<ERROR
-Usage : php check.php project_branch application [redmine_point_list_file]
+Usage : missing_merge project_branch application [redmine_point_list_file]
 
 project_branch          : The branch you want to check for missing merge (typically S49_911 for instance)
                           Be advised that your local repository needs to be on this branch, otherwise an error will be issued
@@ -17,7 +18,8 @@ application             : Application that needs to be check [bong, front, oxy]
 redmine_point_list_file : Path to the file that contents the list of the redmine project
 
 ERROR;
-  die($message);
+  echo $message;
+  exit(1);
 }
 else
 {
@@ -119,8 +121,11 @@ if($pointList !== false){
   }
   else
   {
-    die('Redmine point list is empty');
+    echo 'Redmine point list is empty' . PHP_EOL;
+    exit(1);
   }
 }else{
-  die('Could not find the point list file [' . $redminePointListFile . ']');
+  echo 'Could not find the point list file [' . $redminePointListFile . ']';
+  exit(1);
 }
+exit(0);
