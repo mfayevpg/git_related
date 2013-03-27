@@ -83,25 +83,94 @@ function getLastMasterBranch()
   $masterBranch = `git branch -a |grep "remotes/origin/master_[0-9.]\+"`;
   $masterBranchList = cleanArray(explode("\n", $masterBranch));
   natsort($masterBranchList);
-  $biggest = 0;
+  $mainBiggest = -1;
+  $subBiggest = -1;
   foreach ($masterBranchList as $masterBranchName)
   {
     $branch = str_replace('remotes/origin/', '', $masterBranchName);
     $match = array();
     if (preg_match('~^master_([0-9]\\.[0-9]+)$~', $branch, $match) == 1)
     {
-      if ($biggest < $match[1])
-      {
-        $biggest = $match[1];
+      if(strpos($match[1], '.') !==  false){
+        list($mainVersion, $subVersion) = explode('.', $match[1]);
+        if($mainVersion > $mainBiggest){
+          $mainBiggest = $mainVersion;
+          $subBiggest =  $subVersion;
+        }else{
+          if(($mainVersion == $mainBiggest) && ($subVersion > $subBiggest)){
+            $subBiggest = $subVersion;
+          }
+        }
+      }else{
+        throw new RuntimeException('Could not explode version number [' . $match[1] . ']');
       }
     }
   }
-  if ($biggest == 0)
+  if ($mainBiggest == -1 || $subBiggest == -1)
   {
     throw new RuntimeException('Could not find last master branch');
   }
+  return 'master_' . $mainBiggest . '.' . $subBiggest;
+}
 
-  return 'master_' . $biggest;
+/**
+ * @param $branchList
+ * @param $requestedPoint
+ */
+function handleHasALocalVersion($branchList, $requestedPoint)
+{
+  echo '============================================' . PHP_EOL;
+  echo 'This branch has a local version' . PHP_EOL;
+  echo 'Would you like to update it or recreate it ?' . PHP_EOL;
+  echo '[u]pdate | [r]create : ';
+  $line = trim(fgets(STDIN));
+  if (strpos($line, 'u') !== false)
+  {
+    if ($branchList[0]{0} == '*')
+    {
+      echo 'Current branch is already this one.' . PHP_EOL;
+    }
+    else
+    {
+      echo 'Switching to branch' . PHP_EOL;
+      `git checkout $requestedPoint`;
+    }
+    echo 'Retrieving updates for branch' . PHP_EOL;
+    `git pull origin $requestedPoint`;
+  }else{
+    handleBranchRecreation($branchList, $requestedPoint);
+  }
+}
+
+/**
+ * @param $branchList
+ * @param $requestedPoint
+ * @throws RuntimeException
+ */
+function handleBranchRecreation($branchList, $requestedPoint)
+{
+  if ($branchList[0]{0} == '*')
+  {
+    throw new RuntimeException('To recreate the branch we need to be on a different branch, so change branch first');
+  }
+  $output = array();
+  $returnVal = null;
+  echo 'Removing local branch [' . $requestedPoint . ']' . PHP_EOL;
+  exec('git branch -d ' . $requestedPoint, $output, $returnVal);
+  if($returnVal != 0){
+    echo '============================================' . PHP_EOL;
+    echo 'Seems like there was a problem when trying to delete cleanly the local branch.' . PHP_EOL;
+    echo 'Do you wish to continue and force the removal ?' . PHP_EOL;
+    echo '[y]es | [n]o : ';
+    $line = trim(fgets(STDIN));
+    if(strpos($line, 'n') !== false){
+      throw new RuntimeException('Local branch [' . $requestedPoint . '] could not be removed cleanly');
+    }else{
+      `git branch -D $requestedPoint`;
+    }
+  }
+  echo 'Creating branch ' .PHP_EOL;
+  `git checkout -b $requestedPoint origin/$requestedPoint`;
 }
 
 /**
@@ -112,6 +181,7 @@ function getLastMasterBranch()
  */
 if ($argc == 2)
 {
+  echo getcwd().PHP_EOL;
   if (file_exists(getcwd() . '/.git') && is_dir(getcwd() . '/.git'))
   {
     echo 'Fetching repo' . PHP_EOL;
@@ -121,9 +191,9 @@ if ($argc == 2)
     $distantBranch = `git branch -a |grep remotes/origin/$requestedPoint`;
     $branchList = cleanArray(explode("\n", $localBranch));
     $distantBranchList = cleanArray(explode("\n", $distantBranch));
-    if (count($branchList) == 1 && (count($distantBranchList) == 1))
+    if (count($distantBranchList) == 1)
     {
-      if ($branchList[0] == '')
+      if (!isset($branchList[0]) || $branchList[0] == '')
       {
         //Branch does not exists locally
         echo 'This branch has no local version, it will be created' . PHP_EOL;
@@ -132,18 +202,12 @@ if ($argc == 2)
       else
       {
         //Branch has a local version
-        echo 'This branch has a local version, it will be updated' . PHP_EOL;
-        if ($branchList[0]{0} == '*')
-        {
-          echo 'Current branch is already this one.' . PHP_EOL;
+        try{
+          handleHasALocalVersion($branchList, $requestedPoint);
+        }catch (Exception $exception){
+          echo $exception->getMessage() . PHP_EOL;
+          exit(1);
         }
-        else
-        {
-          echo 'Switching to branch' . PHP_EOL;
-          `git checkout $requestedPoint`;
-        }
-        echo 'Retrieving updates for branch' . PHP_EOL;
-        `git pull origin $requestedPoint`;
       }
     }
     else
@@ -157,6 +221,7 @@ if ($argc == 2)
       {
         $errorMessage = 'There is more than one branch that fits the name [' . $requestedPoint . ']' . PHP_EOL;
         $errorMessage .= 'Please be more precise' . PHP_EOL;
+        $errorMessage .= print_r($branchList, true);
       }
       echo $errorMessage;
       exit(1);
