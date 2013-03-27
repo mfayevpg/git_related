@@ -13,7 +13,7 @@ There are 2 ways to install the scripts : Manual and Automatic
 Those scripts are meant to be run from the command line.
 Best practice would be to clone this repo in some dir then make a symbolic link to each script in your /usr/local/bin
 
-    git git@github.com:mfayevpg/git_related.git git_related
+    git clone git@github.com:mfayevpg/git_related.git git_related
     chmod 755 git_related/tester_branch/tester_branch_switch.php
     sudo ln -s git_related/tester_branch/tester_branch_switch.php /usr/local/bin/tester_branch
 This way you can call them from wherever you are.
@@ -24,7 +24,7 @@ This way you can call them from wherever you are.
 
 Run the install script
 
-    git git@github.com:mfayevpg/git_related.git git_related
+    git clone git@github.com:mfayevpg/git_related.git git_related
     cd git_related
     sudo ./install.sh
 
