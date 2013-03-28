@@ -170,7 +170,26 @@ function handleBranchRecreation($branchList, $requestedPoint)
     }
   }
   echo 'Creating branch ' .PHP_EOL;
-  `git checkout -b $requestedPoint origin/$requestedPoint`;
+  handleBranchCreation($requestedPoint);
+}
+
+function handleBranchCreation($requestedBranch){
+  $output = array();
+  $returnVal = null;
+  echo 'Creating branch [' . $requestedBranch . ']' . PHP_EOL;
+  exec('git checkout -b ' . $requestedBranch . ' origin/' . $requestedBranch, $output, $returnVal);
+  if($returnVal != 0){
+    echo '============================================' . PHP_EOL;
+    echo 'Seems like there was a problem when trying to checkout cleanly the local branch.' . PHP_EOL;
+    echo 'Do you wish to continue and force the checkout ?' . PHP_EOL;
+    echo '[y]es | [n]o : ';
+    $line = trim(fgets(STDIN));
+    if(strpos($line, 'n') !== false){
+      throw new RuntimeException('Local branch [' . $requestedBranch . '] could not be checked out cleanly');
+    }else{
+      `git checkout --force -b $requestedBranch origin/$requestedBranch`;
+    }
+  }
 }
 
 /**
@@ -196,8 +215,14 @@ if ($argc == 2)
       if (!isset($branchList[0]) || $branchList[0] == '')
       {
         //Branch does not exists locally
-        echo 'This branch has no local version, it will be created' . PHP_EOL;
-        `git checkout -b $requestedPoint origin/$requestedPoint`;
+        try{
+          echo 'This branch has no local version, it will be created' . PHP_EOL;
+          handleBranchCreation($requestedPoint);
+        }catch (Exception $exception){
+          echo $exception->getMessage() . PHP_EOL;
+          exit(1);
+        }
+
       }
       else
       {
