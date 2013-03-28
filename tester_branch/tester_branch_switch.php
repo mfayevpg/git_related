@@ -115,15 +115,15 @@ function getLastMasterBranch()
 
 /**
  * @param $branchList
- * @param $requestedPoint
+ * @param $requestedBranch
  */
-function handleHasALocalVersion($branchList, $requestedPoint)
+function handleHasALocalVersion($branchList, $requestedBranch)
 {
   echo '============================================' . PHP_EOL;
   echo 'This branch has a local version' . PHP_EOL;
   echo 'Would you like to update it or recreate it ?' . PHP_EOL;
   echo '[u]pdate | [r]create : ';
-  $line = trim(fgets(STDIN));
+  $line = strtolower(trim(fgets(STDIN)));
   if (strpos($line, 'u') !== false)
   {
     if ($branchList[0]{0} == '*')
@@ -133,12 +133,26 @@ function handleHasALocalVersion($branchList, $requestedPoint)
     else
     {
       echo 'Switching to branch' . PHP_EOL;
-      `git checkout $requestedPoint`;
+      $returnVar = null;
+      $output = array();
+      exec('git checkout ' . $requestedBranch, $output, $returnVar);
+      if($returnVar != 0){
+        echo '============================================' . PHP_EOL;
+        echo 'Seems like there was a problem when trying to checkout cleanly the local branch.' . PHP_EOL;
+        echo 'Do you wish to continue and force the checkout ?' . PHP_EOL;
+        echo '[y]es | [n]o : ';
+        $line = trim(fgets(STDIN));
+        if(strpos($line, 'n') !== false){
+          throw new RuntimeException('Local branch [' . $requestedBranch . '] could not be checked out cleanly');
+        }else{
+          `git checkout --force $requestedBranch`;
+        }
+      }
     }
     echo 'Retrieving updates for branch' . PHP_EOL;
-    `git pull origin $requestedPoint`;
+    `git pull origin $requestedBranch`;
   }else{
-    handleBranchRecreation($branchList, $requestedPoint);
+    handleBranchRecreation($branchList, $requestedBranch);
   }
 }
 
@@ -162,7 +176,7 @@ function handleBranchRecreation($branchList, $requestedPoint)
     echo 'Seems like there was a problem when trying to delete cleanly the local branch.' . PHP_EOL;
     echo 'Do you wish to continue and force the removal ?' . PHP_EOL;
     echo '[y]es | [n]o : ';
-    $line = trim(fgets(STDIN));
+    $line = strtolower(trim(fgets(STDIN)));
     if(strpos($line, 'n') !== false){
       throw new RuntimeException('Local branch [' . $requestedPoint . '] could not be removed cleanly');
     }else{
@@ -183,7 +197,7 @@ function handleBranchCreation($requestedBranch){
     echo 'Seems like there was a problem when trying to checkout cleanly the local branch.' . PHP_EOL;
     echo 'Do you wish to continue and force the checkout ?' . PHP_EOL;
     echo '[y]es | [n]o : ';
-    $line = trim(fgets(STDIN));
+    $line = strtolower(trim(fgets(STDIN)));
     if(strpos($line, 'n') !== false){
       throw new RuntimeException('Local branch [' . $requestedBranch . '] could not be checked out cleanly');
     }else{
