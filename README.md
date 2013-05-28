@@ -26,7 +26,7 @@ Run the install script
 
     git clone git@github.com:mfayevpg/git_related.git git_related
     cd git_related
-    sudo ./install.sh
+    sudo ./install.php
 
 And it's done :)
 
