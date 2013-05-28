@@ -11,6 +11,40 @@
  *
  */
 
+function handleMultipleBranches($currentLocalBranch, $requestedPoint, $distantBranchList)
+{
+  $validChoice = false;
+  do{
+    $errorMessage = 'There is more than one branch that fits the name [' . $requestedPoint . ']' . PHP_EOL;
+    $errorMessage .= 'Please choose among those suggestions' . PHP_EOL;
+    $optionList = array_keys($distantBranchList);
+    $minChoice = min($optionList);
+    $maxChoice = max($optionList);
+    foreach($distantBranchList as $optionNumber => $branchName){
+      $errorMessage .= "\t" . '[' . $optionNumber . '] => ' . $branchName . PHP_EOL;
+    }
+    $errorMessage .= 'Your choice : ';
+    echo $errorMessage;
+    $line = strtolower(trim(fgets(STDIN)));
+    if(is_numeric($line) && ($line >= $minChoice) && ($line <= $maxChoice)){
+      $requestedPoint = str_replace('remotes/origin/', '', $distantBranchList[$line]);
+      echo 'Chosen branch : ' . $requestedPoint . PHP_EOL;
+      echo 'Are you sure you want to proceed ? : ' . PHP_EOL;
+      echo '[y]es | [n]o :';
+      $line = strtolower(trim(fgets(STDIN)));
+      if($line == 'y'){
+        createBranch($currentLocalBranch, $requestedPoint, true);
+        $validChoice = true;
+      }
+    }else{
+      echo '============================================' . PHP_EOL;
+      echo 'Invalid choice' . PHP_EOL;
+      echo '============================================' . PHP_EOL;
+    }
+  }while(!$validChoice);
+
+}
+
 /**
  * @param array $arrayToClean
  * @return array
@@ -39,7 +73,6 @@ function cleanArray(array $arrayToClean)
  */
 function getRequestedBranch($userInput)
 {
-  $requestedPoint = '';
   if (preg_match('~^[0-9]+$~', $userInput))
   {
     //requested branch is a point
@@ -114,10 +147,13 @@ function getLastMasterBranch()
 }
 
 /**
- * @param $branchList
+ * @param $currentLocalBranch
  * @param $requestedBranch
+ * @param bool $isStrict
+ * @throws RuntimeException
+ * @internal param $branchList
  */
-function handleHasALocalVersion($branchList, $requestedBranch)
+function handleHasALocalVersion($currentLocalBranch, $requestedBranch, $isStrict = false)
 {
   echo '============================================' . PHP_EOL;
   echo 'This branch has a local version' . PHP_EOL;
@@ -126,7 +162,7 @@ function handleHasALocalVersion($branchList, $requestedBranch)
   $line = strtolower(trim(fgets(STDIN)));
   if (strpos($line, 'u') !== false)
   {
-    if ($branchList[0]{0} == '*')
+    if ($currentLocalBranch{0} == '*')
     {
       echo 'Current branch is already this one.' . PHP_EOL;
     }
@@ -152,7 +188,7 @@ function handleHasALocalVersion($branchList, $requestedBranch)
     echo 'Retrieving updates for branch' . PHP_EOL;
     `git pull origin $requestedBranch`;
   }else{
-    handleBranchRecreation($branchList, $requestedBranch);
+    handleBranchRecreation($currentLocalBranch, $requestedBranch);
   }
 }
 
@@ -161,9 +197,9 @@ function handleHasALocalVersion($branchList, $requestedBranch)
  * @param $requestedPoint
  * @throws RuntimeException
  */
-function handleBranchRecreation($branchList, $requestedPoint)
+function handleBranchRecreation($currentLocalBranch, $requestedPoint)
 {
-  if ($branchList[0]{0} == '*')
+  if ($currentLocalBranch{0} == '*')
   {
     throw new RuntimeException('To recreate the branch we need to be on a different branch, so change branch first');
   }
@@ -212,9 +248,41 @@ function handleBranchCreation($requestedBranch){
  * MAIN
  *
  */
+/**
+ * @param $currentLocalBranch
+ * @param $requestedPoint
+ */
+function createBranch($currentLocalBranch, $requestedPoint, $isStrict = false)
+{
+  if (!isset($currentLocalBranch) || $currentLocalBranch == '')
+  {
+    //Branch does not exists locally
+    try
+    {
+      echo 'This branch has no local version, it will be created' . PHP_EOL;
+      handleBranchCreation($requestedPoint);
+    } catch (Exception $exception)
+    {
+      echo $exception->getMessage() . PHP_EOL;
+      exit(1);
+    }
+
+  }
+  else
+  {
+    //Branch has a local version
+    try
+    {
+      handleHasALocalVersion($currentLocalBranch, $requestedPoint, $isStrict);
+    } catch (Exception $exception)
+    {
+      echo $exception->getMessage() . PHP_EOL;
+      exit(1);
+    }
+  }
+}
 if ($argc == 2)
 {
-  echo getcwd().PHP_EOL;
   if (file_exists(getcwd() . '/.git') && is_dir(getcwd() . '/.git'))
   {
     echo 'Fetching repo' . PHP_EOL;
@@ -226,44 +294,20 @@ if ($argc == 2)
     $distantBranchList = cleanArray(explode("\n", $distantBranch));
     if (count($distantBranchList) == 1)
     {
-      if (!isset($branchList[0]) || $branchList[0] == '')
-      {
-        //Branch does not exists locally
-        try{
-          echo 'This branch has no local version, it will be created' . PHP_EOL;
-          handleBranchCreation($requestedPoint);
-        }catch (Exception $exception){
-          echo $exception->getMessage() . PHP_EOL;
-          exit(1);
-        }
-
-      }
-      else
-      {
-        //Branch has a local version
-        try{
-          handleHasALocalVersion($branchList, $requestedPoint);
-        }catch (Exception $exception){
-          echo $exception->getMessage() . PHP_EOL;
-          exit(1);
-        }
-      }
+      createBranch($branchList[0], $requestedPoint);
     }
     else
     {
-      $errorMessage = '';
       if (count($distantBranchList) == 0)
       {
-        $errorMessage = 'Requested [' . $requestedPoint . '] branch does not exists on origin' . PHP_EOL;
+        echo 'Requested [' . $requestedPoint . '] branch does not exists on origin' . PHP_EOL;
+        exit(1);
       }
       else
       {
-        $errorMessage = 'There is more than one branch that fits the name [' . $requestedPoint . ']' . PHP_EOL;
-        $errorMessage .= 'Please be more precise' . PHP_EOL;
-        $errorMessage .= print_r($branchList, true);
+         handleMultipleBranches($branchList[0], $requestedPoint, $distantBranchList);
       }
-      echo $errorMessage;
-      exit(1);
+
     }
   }
   else
@@ -286,5 +330,4 @@ HELP;
   echo $help;
   exit(1);
 }
-
 exit(0);
