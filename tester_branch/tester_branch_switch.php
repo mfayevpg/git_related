@@ -835,6 +835,7 @@ function findUserLogin()
  */
 $userLogin = findUserLogin();
 list($gitHubLogin, $gitHubPass) = explode(':', getenv('TESTER_HELPER_' . strtoupper($userLogin)));
+var_dump($gitHubLogin, $gitHubPass);
 $gitHubApi = new GitHubApi($gitHubLogin, $gitHubPass);
 
 $reposList = array();
